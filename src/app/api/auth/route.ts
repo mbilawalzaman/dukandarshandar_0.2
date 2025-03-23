@@ -1,0 +1,23 @@
+import { NextResponse } from "next/server";
+import { signupController, loginController } from "@/controllers/authController";
+
+export async function POST(req: Request) {
+  try {
+    const { name, email, password, type } = await req.json();
+
+    if (type === "signup") {
+      const response = await signupController(name, email, password);
+      return NextResponse.json(response, { status: response.success ? 201 : 400 });
+    }
+
+    if (type === "login") {
+      const response = await loginController(email, password);
+      return NextResponse.json(response, { status: response.success ? 200 : 401 });
+    }
+
+    return NextResponse.json({ success: false, error: "Invalid request type" }, { status: 400 });
+  } catch (error) {
+    console.error("Auth Error:", error);
+    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+  }
+}
