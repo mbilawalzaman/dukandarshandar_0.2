@@ -9,11 +9,12 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
@@ -29,16 +30,13 @@ export default function Login() {
         localStorage.setItem("token", data.token);
         window.dispatchEvent(new Event("authChange"));
       }
-      // localStorage.setItem("token", data.token);
-
-      // Notify other components about authentication change
-      window.dispatchEvent(new Event("authChange"));
 
       router.push("/");
     } else {
       setError(data.error);
     }
   };
+
 
 
   return (
@@ -78,7 +76,7 @@ export default function Login() {
                   Login
                 </Button>
                 <Typography align="center">
-                  Don't have an account?{' '}
+                  Don not have an account?{' '}
                   <Link href="/signup" color="primary">
                     Sign Up
                   </Link>

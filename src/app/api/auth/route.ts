@@ -18,6 +18,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Invalid request type" }, { status: 400 });
   } catch (error) {
     console.error("Auth Error:", error);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+
+    // ✅ Properly handle unknown error type
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

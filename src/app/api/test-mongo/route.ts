@@ -10,6 +10,10 @@ export async function GET() {
     return NextResponse.json({ success: true, collections });
   } catch (error) {
     console.error("MongoDB Connection Error:", error);
-    return NextResponse.json({ success: false, error: error.message });
+
+    // ✅ Type assertion to ensure `error` has a `message` property
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    return NextResponse.json({ success: false, error: errorMessage });
   }
 }

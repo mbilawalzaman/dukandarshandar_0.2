@@ -22,17 +22,17 @@ const Banner = () => {
         slidesToScroll: 1,
         autoplay: true,
         autoplaySpeed: 3000,
-        appendDots: dots => (
+        appendDots: (dots: React.ReactNode) => (
             <Box
                 sx={{
                     position: "absolute",
-                    bottom: "20px",
+                    bottom: "10px",
                     width: "100%",
                     display: "flex",
                     justifyContent: "center",
                 }}
             >
-                <ul style={{ margin: "0px", padding: "0px" }}> {dots} </ul>
+                {dots}
             </Box>
         ),
         customPaging: () => (
