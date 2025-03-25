@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Grid, Card, CardMedia, CardContent, Typography, CardActions, Button, CircularProgress, Box } from "@mui/material";
+import { useRouter } from "next/navigation"; // ✅ Use this to navigate
+
 
 interface Product {
     _id: string;
@@ -16,6 +18,7 @@ interface Product {
 const ProductList = ({ refreshTrigger }: { refreshTrigger: boolean }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     const fetchProducts = async () => {
         try {
@@ -73,7 +76,11 @@ const ProductList = ({ refreshTrigger }: { refreshTrigger: boolean }) => {
                                     </Typography>
                                 </CardContent>
                                 <CardActions>
-                                    <Button size="small" color="primary">
+                                    <Button
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => router.push(`/products/${product._id}`)}
+                                    >
                                         View Details
                                     </Button>
                                     <Button size="small" color="secondary">
