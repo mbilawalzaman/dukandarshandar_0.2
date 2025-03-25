@@ -22,6 +22,7 @@ const ProductSchema: Schema = new Schema(
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
     rating: { type: Number, default: 0 },
+    description: {type: String, required: true},
     image: { type: String, required: true }, // Base64 image
 
     status: { type: String, default: "active" },

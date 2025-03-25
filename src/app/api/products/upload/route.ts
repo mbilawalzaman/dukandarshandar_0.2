@@ -10,9 +10,9 @@ export async function POST(req: Request) {
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
 
-    const { name, category, price, quantity, rating, image, created_by } = await req.json();
+    const { name, category, price, quantity, description, rating, image, created_by } = await req.json();
 
-    if (!name || !category || !price || !quantity || !image) {
+    if (!name || !category || !price || !quantity || !image || !description) {
       return NextResponse.json({ success: false, message: "All fields are required" }, { status: 400 });
     }
 
@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       price,
       quantity,
       rating: rating || 0,
+      description,
       image,
       status: "active",
       created_by,

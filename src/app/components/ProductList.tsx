@@ -13,6 +13,7 @@ interface Product {
     quantity: number;
     rating: number;
     image: string;
+    description: string;
 }
 
 const ProductList = ({ refreshTrigger }: { refreshTrigger: boolean }) => {

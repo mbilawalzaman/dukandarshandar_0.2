@@ -14,6 +14,7 @@ interface Product {
     quantity: number;
     rating: number;
     image: string;
+    description: string;
 }
 
 const ProductDetails = () => {
@@ -124,7 +125,7 @@ const ProductDetails = () => {
                     {product.name}
                 </Typography>
                 <Typography variant="body1" color="textSecondary" sx={{ mt: 1, fontSize: "18px" }}>
-                    Category: <b>{product.category}</b>
+                    <b>Category: </b>{product.category}
                 </Typography>
                 <Typography variant="h4" color="primary" sx={{ mt: 2, fontWeight: "bold" }}>
                     PKR {product.price}
@@ -132,7 +133,9 @@ const ProductDetails = () => {
                 <Typography variant="body2" sx={{ mt: 1, fontSize: "16px", color: "#555", display: "flex", alignItems: "center", gap: 1 }}>
                     <Rating value={product.rating} max={5} precision={1} readOnly />
                 </Typography>
-
+                <Typography variant="body1" sx={{ mt: 2, fontSize: "16px", color: "text.primary", lineHeight: 1.5 }}>
+                    <b>Description: </b> {product.description ?? "No description available"}
+                </Typography>
                 {/* Quantity Controls */}
                 <Box
                     sx={{

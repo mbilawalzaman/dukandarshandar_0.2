@@ -13,6 +13,7 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
         category: "",
         price: "",
         quantity: "",
+        description: "",
         rating: 0,
         created_by: "admin", // Change this dynamically if needed
     });
@@ -55,7 +56,7 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
                 if (data.success) {
                     alert("Product added successfully!");
                     onProductUpload();
-                    setProduct({ name: "", category: "", price: "", quantity: "", rating: 0, created_by: "admin" });
+                    setProduct({ name: "", category: "", price: "", quantity: "", description: "", rating: 0, created_by: "admin" });
                     setSelectedImage("");
                 } else {
                     alert("Error: " + data.message);
@@ -77,6 +78,15 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
                     name="name"
                     placeholder="Product Name"
                     value={product.name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border rounded"
+                />
+                <input
+                    type="text"
+                    name="description"
+                    placeholder="Description"
+                    value={product.description}
                     onChange={handleInputChange}
                     required
                     className="w-full p-2 border rounded"

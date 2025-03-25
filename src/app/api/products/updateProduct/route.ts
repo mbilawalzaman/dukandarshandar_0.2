@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 
 export async function PATCH(req: Request) {
   try {
-    const { _id, name, category, price, quantity, rating, image, updated_by } = await req.json();
+    const { _id, name, category, price, quantity, rating, image, description, updated_by } = await req.json();
 
     if (!_id) {
       return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -20,7 +20,7 @@ export async function PATCH(req: Request) {
     const updateResult = await db.collection("products").updateOne(
       { _id: new ObjectId(_id) },
       {
-        $set: { name, category, price, quantity, rating, image, updated_by, updated_at: new Date() },
+        $set: { name, category, price, quantity, rating, image, description, updated_by, updated_at: new Date() },
       }
     );
 
