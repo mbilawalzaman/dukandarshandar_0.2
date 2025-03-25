@@ -6,11 +6,22 @@ export async function GET(req: Request) {
   try {
     // Get token from request headers
     const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
 
     // Verify token
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      console.error("Token Verification Error:", err);
+      return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    }
+
+    if (!decoded) {
+      return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    }
 
     // Connect to MongoDB
     const client = await clientPromise;
@@ -22,6 +33,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, users });
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch users" });
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch users";
+
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
