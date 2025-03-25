@@ -13,6 +13,7 @@ interface Product {
     price: number;
     quantity: number;
     rating: number;
+    ratings: number[]; // Store all user ratings
     image: string;
     description: string;
 }
@@ -23,6 +24,7 @@ const ProductDetails = () => {
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+    const [userRating, setUserRating] = useState<number | null>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -34,6 +36,13 @@ const ProductDetails = () => {
                 const data = await res.json();
                 if (data.success) {
                     setProduct(data.product);
+                    // Calculate and set the average rating
+                    if (data.product.ratings?.length) {
+                        const avgRating = data.product.ratings.reduce((sum: number, r: number) => sum + r, 0) / data.product.ratings.length;
+                        setUserRating(avgRating);
+                    } else {
+                        setUserRating(0);
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching product:", error);
@@ -45,29 +54,32 @@ const ProductDetails = () => {
         fetchProductDetails();
     }, [id]);
 
-    const increment = () => setQuantity((prev) => prev + 1);
-    const decrement = () => {
-        if (quantity > 1) setQuantity((prev) => prev - 1);
-    };
+    const handleRatingChange = async (newValue: number | null) => {
+        if (!product || newValue === null) return;
 
-    const addToCart = () => {
-        if (product) {
-            const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-            cart.push({ ...product, selectedQuantity: quantity });
-            localStorage.setItem("cart", JSON.stringify(cart));
-            alert("Added to cart!");
+        // Round rating to nearest 0.5
+        const roundedRating = Math.round(newValue * 2) / 2;
+
+        setUserRating(roundedRating); // Instantly update UI
+
+        try {
+            const res = await fetch("/api/products/updateProduct", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ _id: product._id, rating: roundedRating }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setProduct((prev) => prev ? { ...prev, rating: roundedRating } : prev);
+            }
+        } catch (error) {
+            console.error("Error updating rating:", error);
         }
     };
 
-    const buyNow = () => {
-        if (product) {
-            localStorage.setItem(
-                "checkoutItem",
-                JSON.stringify({ ...product, selectedQuantity: quantity })
-            );
-            router.push("/checkout");
-        }
-    };
 
     if (loading) {
         return (
@@ -90,20 +102,19 @@ const ProductDetails = () => {
             sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                gap: { xs: 3, md: 8 }, // More spacing between sections on desktop
-                maxWidth: { xs: "100%", md: "1400px" }, // Increased max width
-                minHeight: { xs: "auto", md: "700px" }, // Set a minimum height for desktop
+                gap: { xs: 3, md: 8 },
+                maxWidth: { xs: "100%", md: "1400px" },
+                minHeight: { xs: "auto", md: "700px" },
                 margin: "auto",
-                padding: { xs: "20px", md: "80px" }, // Increased padding for vertical space
-                mt: { xs: 0, md: "140px" }, // 14px margin-top only for desktop
+                padding: { xs: "20px", md: "80px" },
+                mt: { xs: 0, md: "140px" },
                 pb: 8,
                 backgroundColor: "#f9f9f9",
-                borderRadius: "16px", // Slightly more rounded corners
-                boxShadow: "0px 6px 30px rgba(0, 0, 0, 0.15)", // Stronger shadow for a premium feel
+                borderRadius: "16px",
+                boxShadow: "0px 6px 30px rgba(0, 0, 0, 0.15)",
                 overflow: "hidden",
             }}
         >
-
             {/* Left: Product Image */}
             <Box sx={{ textAlign: "center" }}>
                 <img
@@ -130,12 +141,25 @@ const ProductDetails = () => {
                 <Typography variant="h4" color="primary" sx={{ mt: 2, fontWeight: "bold" }}>
                     PKR {product.price}
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 1, fontSize: "16px", color: "#555", display: "flex", alignItems: "center", gap: 1 }}>
-                    <Rating value={product.rating} max={5} precision={1} readOnly />
-                </Typography>
+
+                {/* Rating Section */}
+                <Box sx={{ mt: 2 }}>
+                    {/* <Typography variant="body2" sx={{ fontSize: "16px", color: "#555" }}>
+                        <b>Average Rating:</b> {userRating?.toFixed(1)}/5
+                    </Typography> */}
+                    <Rating
+                        value={userRating}
+                        max={5}
+                        precision={0.5}  // Allows selection in 0.5 intervals
+                        onChange={(_, newValue) => handleRatingChange(newValue)}
+                    />
+                </Box>
+
+                {/* Description */}
                 <Typography variant="body1" sx={{ mt: 2, fontSize: "16px", color: "text.primary", lineHeight: 1.5 }}>
                     <b>Description: </b> {product.description ?? "No description available"}
                 </Typography>
+
                 {/* Quantity Controls */}
                 <Box
                     sx={{
@@ -150,55 +174,33 @@ const ProductDetails = () => {
                         boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.1)",
                     }}
                 >
-                    <Button
-                        onClick={decrement}
-                        sx={{ minWidth: "40px", fontSize: "20px", fontWeight: "bold" }}
-                    >
-                        -
-                    </Button>
-                    <Typography sx={{ mx: 2, fontSize: "18px", fontWeight: "bold" }}>
-                        {quantity}
-                    </Typography>
-                    <Button
-                        onClick={increment}
-                        sx={{ minWidth: "40px", fontSize: "20px", fontWeight: "bold" }}
-                    >
-                        +
-                    </Button>
+                    <Button onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}>-</Button>
+                    <Typography sx={{ mx: 2, fontSize: "18px", fontWeight: "bold" }}>{quantity}</Typography>
+                    <Button onClick={() => setQuantity((prev) => prev + 1)}>+</Button>
                 </Box>
 
                 {/* Action Buttons */}
                 <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
                     <Button
-                        onClick={buyNow}
-                        variant="contained"
-                        sx={{
-                            backgroundColor: "#ff5722",
-                            color: "#fff",
-                            fontWeight: "bold",
-                            fontSize: "18px",
-                            padding: "12px",
-                            borderRadius: "8px",
-                            textTransform: "none",
-                            "&:hover": { backgroundColor: "#e64a19" },
+                        onClick={() => {
+                            localStorage.setItem("checkoutItem", JSON.stringify({ ...product, selectedQuantity: quantity }));
+                            router.push("/checkout");
                         }}
+                        variant="contained"
+                        sx={{ backgroundColor: "#ff5722", color: "#fff", fontWeight: "bold" }}
                         fullWidth
                     >
                         Buy Now
                     </Button>
                     <Button
-                        onClick={addToCart}
-                        variant="outlined"
-                        sx={{
-                            borderColor: "#ff5722",
-                            color: "#ff5722",
-                            fontWeight: "bold",
-                            fontSize: "18px",
-                            padding: "12px",
-                            borderRadius: "8px",
-                            textTransform: "none",
-                            "&:hover": { backgroundColor: "#ffede0", borderColor: "#ff5722" },
+                        onClick={() => {
+                            const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+                            cart.push({ ...product, selectedQuantity: quantity });
+                            localStorage.setItem("cart", JSON.stringify(cart));
+                            alert("Added to cart!");
                         }}
+                        variant="outlined"
+                        sx={{ borderColor: "#ff5722", color: "#ff5722", fontWeight: "bold" }}
                         fullWidth
                     >
                         Add to Cart

@@ -21,6 +21,7 @@ const ProductSchema: Schema = new Schema(
     category: { type: String, required: true },
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
+    ratings: [Number], // Store all user ratings
     rating: { type: Number, default: 0 },
     description: {type: String, required: true},
     image: { type: String, required: true }, // Base64 image

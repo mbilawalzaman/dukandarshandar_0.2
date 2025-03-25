@@ -1,153 +1,221 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import { Rating } from "@mui/material";
 
-interface UploadProductProps {
-    onProductUpload: () => void; // ✅ Define the prop type
+interface Product {
+    _id: string;
+    name: string;
+    category: string;
+    price: number;
+    quantity: number;
+    rating: number;
+    ratings: number[]; // Store all user ratings
+    image: string;
+    description: string;
 }
 
-const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
-    const [selectedImage, setSelectedImage] = useState<string>("");
-    const [product, setProduct] = useState({
-        name: "",
-        category: "",
-        price: "",
-        quantity: "",
-        description: "",
-        rating: 0,
-        created_by: "admin", // Change this dynamically if needed
-    });
+const ProductDetails = () => {
+    const { id } = useParams();
+    const router = useRouter();
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [quantity, setQuantity] = useState(1);
+    const [userRating, setUserRating] = useState<number | null>(null);
 
-    const handleBase64 = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    useEffect(() => {
+        if (!id) return;
 
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => setSelectedImage(reader.result as string);
-        reader.onerror = (error) => console.error("Error:", error);
-    };
+        const fetchProductDetails = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/products/${id}`);
+                const data = await res.json();
+                if (data.success) {
+                    setProduct(data.product);
+                    // Calculate and set the average rating rounded to nearest 0.5
+                    if (data.product.ratings?.length) {
+                        const avgRating =
+                            Math.round(
+                                (data.product.ratings.reduce((sum: number, r: number) => sum + r, 0) /
+                                    data.product.ratings.length) *
+                                2
+                            ) / 2;
+                        setUserRating(avgRating);
+                    } else {
+                        setUserRating(0);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching product:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setProduct({ ...product, [e.target.name]: e.target.value });
-    };
+        fetchProductDetails();
+    }, [id]);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!selectedImage) {
-            alert("Please upload an image");
-            return;
-        }
+    const handleRatingChange = async (newValue: number | null) => {
+        if (!product || newValue === null) return;
+
+        // Round rating to nearest 0.5
+        const roundedRating = Math.round(newValue * 2) / 2;
+
+        // Avoid unnecessary API calls if rating remains the same
+        if (userRating === roundedRating) return;
+
+        setUserRating(roundedRating); // Instantly update UI
 
         try {
-            if (typeof window !== "undefined") {
-                const token = localStorage.getItem("token"); // Fetch JWT from storage
+            const res = await fetch("/api/products/updateProduct", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ _id: product._id, rating: roundedRating }),
+            });
 
-                const response = await fetch("/api/products/upload", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}` // 🔥 Add this line
-                    },
-                    body: JSON.stringify({ ...product, image: selectedImage }),
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert("Product added successfully!");
-                    onProductUpload();
-                    setProduct({ name: "", category: "", price: "", quantity: "", description: "", rating: 0, created_by: "admin" });
-                    setSelectedImage("");
-                } else {
-                    alert("Error: " + data.message);
-                }
+            const data = await res.json();
+            if (data.success) {
+                setProduct((prev) => (prev ? { ...prev, rating: roundedRating } : prev));
             }
-
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error updating rating:", error);
         }
     };
 
+    if (loading) {
+        return (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (!product) {
+        return (
+            <Typography variant="h6" color="error">
+                Product not found.
+            </Typography>
+        );
+    }
 
     return (
-        <div className="max-w-lg mx-auto p-6 bg-white shadow-lg rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Upload Product</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Product Name"
-                    value={product.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border rounded"
+        <Box
+            sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                gap: { xs: 3, md: 8 },
+                maxWidth: { xs: "100%", md: "1400px" },
+                minHeight: { xs: "auto", md: "700px" },
+                margin: "auto",
+                padding: { xs: "20px", md: "80px" },
+                mt: { xs: 0, md: "140px" },
+                pb: 8,
+                backgroundColor: "#f9f9f9",
+                borderRadius: "16px",
+                boxShadow: "0px 6px 30px rgba(0, 0, 0, 0.15)",
+                overflow: "hidden",
+            }}
+        >
+            {/* Left: Product Image */}
+            <Box sx={{ textAlign: "center" }}>
+                <img
+                    src={product.image}
+                    alt={product.name}
+                    style={{
+                        width: "100%",
+                        maxWidth: "500px",
+                        height: "auto",
+                        borderRadius: "12px",
+                        boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.15)",
+                    }}
                 />
-                <input
-                    type="text"
-                    name="description"
-                    placeholder="Description"
-                    value={product.description}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border rounded"
-                />
-                <input
-                    type="text"
-                    name="category"
-                    placeholder="Category"
-                    value={product.category}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border rounded"
-                />
-                <input
-                    type="number"
-                    name="price"
-                    placeholder="Price"
-                    value={product.price}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border rounded"
-                />
-                <input
-                    type="number"
-                    name="quantity"
-                    placeholder="Quantity"
-                    value={product.quantity}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-2 border rounded"
-                />
-                <input
-                    type="number"
-                    name="rating"
-                    placeholder="Rating"
-                    value={product.rating}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded"
-                />
+            </Box>
 
-                <div className="upload-box border p-4 rounded">
-                    <label htmlFor="image-upload" className="upload-label block text-center cursor-pointer">
-                        <p className="text-gray-600">Drag and drop an image or click here to upload</p>
-                    </label>
-                    <input
-                        accept="image/*"
-                        type="file"
-                        id="image-upload"
-                        onChange={handleBase64}
-                        className="hidden"
+            {/* Right: Product Details */}
+            <Box>
+                <Typography variant="h3" fontWeight="bold" sx={{ color: "#333" }}>
+                    {product.name}
+                </Typography>
+                <Typography variant="body1" color="textSecondary" sx={{ mt: 1, fontSize: "18px" }}>
+                    <b>Category: </b>
+                    {product.category}
+                </Typography>
+                <Typography variant="h4" color="primary" sx={{ mt: 2, fontWeight: "bold" }}>
+                    PKR {product.price}
+                </Typography>
+
+                {/* Rating Section */}
+                <Box sx={{ mt: 2 }}>
+                    <Rating
+                        value={userRating}
+                        max={5}
+                        precision={0.5} // Ensure users can select ratings in 0.5 increments
+                        onChange={(_, newValue) => handleRatingChange(newValue)}
                     />
-                </div>
+                </Box>
 
-                {selectedImage && <img src={selectedImage} alt="Preview" className="w-24 h-24 object-cover mt-2" />}
+                {/* Description */}
+                <Typography variant="body1" sx={{ mt: 2, fontSize: "16px", color: "text.primary", lineHeight: 1.5 }}>
+                    <b>Description: </b> {product.description ?? "No description available"}
+                </Typography>
 
-                <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-                    Upload Product
-                </button>
-            </form>
-        </div>
+                {/* Quantity Controls */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mt: 3,
+                        borderRadius: "8px",
+                        border: "1px solid #ddd",
+                        padding: "8px 12px",
+                        width: "fit-content",
+                        backgroundColor: "#fff",
+                        boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                >
+                    <Button onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}>-</Button>
+                    <Typography sx={{ mx: 2, fontSize: "18px", fontWeight: "bold" }}>{quantity}</Typography>
+                    <Button onClick={() => setQuantity((prev) => prev + 1)}>+</Button>
+                </Box>
+
+                {/* Action Buttons */}
+                <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
+                    <Button
+                        onClick={() => {
+                            localStorage.setItem(
+                                "checkoutItem",
+                                JSON.stringify({ ...product, selectedQuantity: quantity })
+                            );
+                            router.push("/checkout");
+                        }}
+                        variant="contained"
+                        sx={{ backgroundColor: "#ff5722", color: "#fff", fontWeight: "bold" }}
+                        fullWidth
+                    >
+                        Buy Now
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+                            cart.push({ ...product, selectedQuantity: quantity });
+                            localStorage.setItem("cart", JSON.stringify(cart));
+                            alert("Added to cart!");
+                        }}
+                        variant="outlined"
+                        sx={{ borderColor: "#ff5722", color: "#ff5722", fontWeight: "bold" }}
+                        fullWidth
+                    >
+                        Add to Cart
+                    </Button>
+                </Box>
+            </Box>
+        </Box>
     );
 };
 
-export default UploadProduct;
+export default ProductDetails;

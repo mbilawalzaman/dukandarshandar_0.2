@@ -1,7 +1,7 @@
 "use client"; // If using Next.js App Router
 
 import { useEffect, useState } from "react";
-import { Grid, Card, CardMedia, CardContent, Typography, CardActions, Button, CircularProgress, Box } from "@mui/material";
+import { Grid, Card, CardMedia, CardContent, Typography, CardActions, Button, CircularProgress, Box, Rating } from "@mui/material";
 import { useRouter } from "next/navigation"; // ✅ Use this to navigate
 
 
@@ -72,9 +72,17 @@ const ProductList = ({ refreshTrigger }: { refreshTrigger: boolean }) => {
                                     <Typography variant="body1" color="primary">
                                         PKR: {product.price}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Rating: ⭐ {product.rating}
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: "1rem" }}
+                                    >
+                                        <Rating value={Number(product.rating) || 0} max={5} precision={0.5} readOnly />
+                                        <span style={{ fontSize: "1.1rem" }}>
+                                            {(Number(product.rating) || 0).toFixed(1)}
+                                        </span>
                                     </Typography>
+
                                 </CardContent>
                                 <CardActions>
                                     <Button
