@@ -6,21 +6,30 @@ import { TextField, Button, Typography, Container, Box, Card, CardContent, Link 
 
 export default function Signup() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user", // ✅ Always set "user" role by default
+  });
   const [error, setError] = useState("");
 
+  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
+    console.log("Submitting Form Data:", formData); // ✅ Debugging: Ensure role is included
+
     const res = await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...formData, type: "signup" }),
+      body: JSON.stringify({ ...formData, type: "signup" }), // ✅ Ensure role is sent
     });
 
     const data = await res.json();
@@ -30,7 +39,6 @@ export default function Signup() {
       setError(data.error);
     }
   };
-
 
   return (
     <Container maxWidth="xs" sx={{ mt: 8 }}>
@@ -68,6 +76,9 @@ export default function Signup() {
                 required
                 onChange={handleChange}
               />
+              {/* ✅ Ensure role is always "user" */}
+              <input type="hidden" name="role" value="user" />
+
               {error && (
                 <Typography color="error" align="center">
                   {error}
@@ -77,7 +88,7 @@ export default function Signup() {
                 Sign Up
               </Button>
               <Typography align="center">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <Link href="/login" color="primary">
                   Login
                 </Link>

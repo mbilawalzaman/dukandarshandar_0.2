@@ -3,10 +3,10 @@ import { signupController, loginController } from "@/controllers/authController"
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, type } = await req.json();
+    const { name, email, password, type, role } = await req.json();
 
     if (type === "signup") {
-      const response = await signupController(name, email, password);
+      const response = await signupController(name, email, password, role);
       return NextResponse.json(response, { status: response.success ? 201 : 400 });
     }
 

@@ -5,7 +5,7 @@ import clientPromise from "@/lib/mongodb";
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // Change this in production
 
 // Signup Controller
-export async function signupController(name: string, email: string, password: string) {
+export async function signupController(name: string, email: string, password: string, role: string) {
   const client = await clientPromise;
   const db = client.db("dukandarshandar");
   const usersCollection = db.collection("users");
@@ -23,6 +23,7 @@ export async function signupController(name: string, email: string, password: st
   await usersCollection.insertOne({
     name,
     email,
+    role,
     password: hashedPassword,
     createdAt: new Date(),
   });
@@ -49,7 +50,7 @@ export async function loginController(email: string, password: string) {
   }
   
   // Generate JWT Token
-  const token = jwt.sign({ userId: user._id, email: user.email, userName: user.name }, JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign({ userId: user._id, email: user.email, userName: user.name, role:user.role }, JWT_SECRET, { expiresIn: "7d" });
 
-  return { success: true, token, user: { name: user.name, email: user.email } };
+  return { success: true, token, user: { name: user.name, email: user.email, role:user.role} };
 }

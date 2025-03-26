@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 export function verifyToken(token: string) {
   try {
@@ -11,4 +12,8 @@ export function verifyToken(token: string) {
     console.error("Token verification failed:", error);
     return null;
   }
+}
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
 }
