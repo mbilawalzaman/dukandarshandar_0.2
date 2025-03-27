@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { Rating } from "@mui/material";
+import Image from "next/image";
 
 
 interface Product {
@@ -117,7 +118,7 @@ const ProductDetails = () => {
         >
             {/* Left: Product Image */}
             <Box sx={{ textAlign: "center" }}>
-                <img
+                <Image
                     src={product.image}
                     alt={product.name}
                     style={{

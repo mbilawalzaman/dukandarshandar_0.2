@@ -94,7 +94,7 @@ export async function updateProduct(req: Request) {
       { returnDocument: "after" } // Return the updated document
     );
 
-    if (!updatedProduct.value) {
+    if (!updatedProduct || !updatedProduct.value) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 

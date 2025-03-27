@@ -4,20 +4,20 @@ import { ObjectId } from "mongodb";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } 
 ) {
   try {
     // ✅ Ensure `params` is awaited properly
-    const params = await context.params;
+    const { id } = await context.params;
 
-    if (!params?.id) {
+    if (!id) {
       return NextResponse.json(
         { success: false, message: "Missing product ID" },
         { status: 400 }
       );
     }
 
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { success: false, message: "Invalid product ID" },
         { status: 400 }
@@ -29,7 +29,7 @@ export async function GET(
 
     const product = await db
       .collection("products")
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!product) {
       return NextResponse.json(

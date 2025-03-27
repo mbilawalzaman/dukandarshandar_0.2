@@ -3,6 +3,11 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
 export async function PATCH(req: Request) {
+
+  interface UpdateQuery {
+    $set?: Record<string, unknown>; // Allow dynamic properties
+}
+
   try {
     const { _id, rating, ...updateFields } = await req.json(); // Extract `_id`, rating, and other fields
 
@@ -25,14 +30,14 @@ export async function PATCH(req: Request) {
     }
 
     // Prepare update object
-    const updateQuery: any = { $currentDate: { updated_at: true } }; // Always update timestamp
+    const updateQuery: UpdateQuery = { $set: {} };
 
     // If `rating` is provided, update rating logic
     if (rating !== undefined) {
       const ratings = product.ratings || [];
       ratings.push(rating);
 
-      const newAverageRating = Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 2) / 2;
+      const newAverageRating = Math.round((ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length) * 2) / 2;
 
 
       updateQuery.$set = { ...updateFields, rating: newAverageRating, ratings };
@@ -41,11 +46,14 @@ export async function PATCH(req: Request) {
     }
 
     // Remove undefined fields from update
-    Object.keys(updateQuery.$set).forEach((key) => {
-      if (updateQuery.$set[key] === undefined) {
-        delete updateQuery.$set[key];
-      }
-    });
+    if (updateQuery.$set) {
+      const setObject = updateQuery.$set as Record<string, unknown>; // ✅ Type assertion
+      Object.keys(setObject).forEach((key) => {
+          if (setObject[key] === undefined) {
+              delete setObject[key];
+          }
+        });
+    }
 
     // Perform update
     const updateResult = await db.collection("products").updateOne(

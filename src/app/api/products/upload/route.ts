@@ -35,6 +35,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Product created successfully", product: result });
   } catch (error) {
+    console.error("Upload Product Error:", error); // ✅ Logs the error
     return NextResponse.json({ success: false, message: "Failed to upload product" }, { status: 500 });
   }
 }

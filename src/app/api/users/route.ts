@@ -7,16 +7,17 @@ import { hashPassword } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    console.log(req.headers)
-    // Get token from request headers
     const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    // Verify token
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    if (!decoded) {
+      return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    }
 
-    // Connect to MongoDB
     const client = await clientPromise;
     const db = client.db("dukandarshandar");
 
@@ -24,17 +25,18 @@ export async function GET(req: Request) {
     const userId = url.searchParams.get("id");
 
     if (userId) {
-      return getUserById(userId); // ✅ Use the controller function
+      const user = await getUserById(userId);
+      if (!user) {
+        return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, user }); // ✅ Wrap in NextResponse.json()
     }
 
-
-    // Fetch users
     const users = await db.collection("users").find({}).toArray();
-
     return NextResponse.json({ success: true, users });
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch users" });
+    return NextResponse.json({ success: false, error: "Failed to fetch users" }, { status: 500 });
   }
 }
 

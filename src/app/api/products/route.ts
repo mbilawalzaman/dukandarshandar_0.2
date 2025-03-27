@@ -9,7 +9,9 @@ export async function GET() {
     const products = await db.collection("products").find({}).toArray();
 
     return NextResponse.json({ success: true, products });
-  } catch (error) {
+  } 
+  catch (error) {
+    console.error("Product update error:", error); // ✅ Logs the error
     return NextResponse.json({ success: false, message: "Failed to fetch products" }, { status: 500 });
-  }
+}
 }

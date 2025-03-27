@@ -10,13 +10,21 @@ export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  interface DecodedToken {
+    id: string;
+    email: string;
+    role: string;
+    exp: number;
+    iat: number;
+  }
+
   useEffect(() => {
     const fetchUserRole = async () => {
       if (typeof window !== "undefined") {
         const token = localStorage.getItem("token");
         if (token) {
           try {
-            const decodedToken: any = jwtDecode(token);
+            const decodedToken: DecodedToken = jwtDecode<DecodedToken>(token);
             const role = decodedToken.role; // ✅ Extract role from token
 
             console.log("Decoded Role:", role); // Debugging

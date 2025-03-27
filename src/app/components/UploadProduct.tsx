@@ -1,18 +1,20 @@
 "use client";
 
-import { Description } from "@mui/icons-material";
 import { useState } from "react";
+import Image from "next/image";
 
 interface Product {
     _id: string;
     name: string;
     category: string;
-    price: number;
-    quantity: number;
+    price: number; // ✅ Allow any number
+    quantity: number; // ✅ Allow any number
     rating: number;
-    ratings: number[]; // Store all user ratings
+    ratings: number[];
     image: string;
     description: string;
+    created_by: string
+
 }
 
 interface UploadProductProps {
@@ -21,14 +23,17 @@ interface UploadProductProps {
 
 const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
     const [selectedImage, setSelectedImage] = useState<string>("");
-    const [product, setProduct] = useState({
+    const [product, setProduct] = useState<Product>({
+        _id: "", // Default empty string, will be assigned by the database
         name: "",
         category: "",
-        price: "",
-        description: "",
-        quantity: "",
+        price: 0, // Should be a number
+        quantity: 0, // Should be a number
         rating: 0,
-        created_by: "admin", // Change this dynamically if needed
+        ratings: [], // Empty array for ratings
+        image: "",
+        description: "",
+        created_by: ""
     });
 
     const handleBase64 = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +74,18 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
                 if (data.success) {
                     alert("Product added successfully!");
                     onProductUpload();
-                    setProduct({ name: "", category: "", price: "", quantity: "", description: "", rating: 0, created_by: "admin" });
+                    setProduct({
+                        _id: "", // ✅ Reset ID
+                        name: "",
+                        category: "",
+                        price: 0, // ✅ Ensure it's a number
+                        quantity: 0, // ✅ Ensure it's a number
+                        description: "",
+                        rating: 0,
+                        ratings: [], // ✅ Reset ratings array
+                        image: "", // ✅ Reset image
+                        created_by: "admin" // ✅ Reset created_by
+                    });
                     setSelectedImage("");
                 } else {
                     alert("Error: " + data.message);
@@ -153,7 +169,7 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
                     />
                 </div>
 
-                {selectedImage && <img src={selectedImage} alt="Preview" className="w-24 h-24 object-cover mt-2" />}
+                {selectedImage && <Image src={selectedImage} alt="Preview" className="w-24 h-24 object-cover mt-2" />}
 
                 <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
                     Upload Product
