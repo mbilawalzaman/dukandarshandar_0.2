@@ -13,23 +13,25 @@ export async function createProduct(req: Request) {
     const decoded = verifyToken(token);
     if (!decoded) return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
 
+    // Extract product details
+    const { name, category, price, quantity, description, rating, image, created_by } = await req.json();
+
+    if (!name || !category || !price || !quantity || !image || !description) {
+      return NextResponse.json({ success: false, message: "All fields are required" }, { status: 400 });
+    }
+
     // Connect to MongoDB
     const client = await clientPromise;
     const db = client.db("dukandarshandar");
 
-    // Extract product details
-    const { name, category, price, quantity, rating, image, created_by } = await req.json();
-
-    if (!name || !category || !price || !quantity || !image) {
-      return NextResponse.json({ success: false, message: "All required fields must be provided." }, { status: 400 });
-    }
-
+    // Create product object
     const newProduct = {
       name,
       category,
       price,
       quantity,
       rating: rating || 0,
+      description,
       image,
       status: "active",
       created_by,
@@ -48,6 +50,7 @@ export async function createProduct(req: Request) {
       return NextResponse.json({ success: false, message: "Failed to fetch the product after insertion." }, { status: 500 });
     }
 
+    // Return success response with the created product
     return NextResponse.json({ success: true, message: "Product created successfully", product: insertedProduct });
   } catch (error) {
     console.error("Error adding product:", error);
@@ -55,52 +58,137 @@ export async function createProduct(req: Request) {
   }
 }
 
+
 // ✏️ Update Product
-export async function updateProduct(req: Request) {
+
+  export async function updateProduct(req: Request) {
+    interface UpdateQuery {
+      $set?: Record<string, unknown>;
+    }
+
+    try {
+      const { _id, rating, ...updateFields } = await req.json(); // Extract `_id`, rating, and other fields
+
+      if (!_id) {
+        return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
+      }
+
+      if (!ObjectId.isValid(_id)) {
+        return NextResponse.json({ success: false, message: "Invalid Product ID format" }, { status: 400 });
+      }
+
+      const client = await clientPromise;
+      const db = client.db("dukandarshandar");
+
+      // Fetch the existing product
+      const product = await db.collection("products").findOne({ _id: new ObjectId(_id) });
+
+      if (!product) {
+        return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+      }
+
+      // Prepare update object
+      const updateQuery: UpdateQuery = { $set: {} };
+
+      // If `rating` is provided, update rating logic
+      if (rating !== undefined) {
+        const ratings = product.ratings || [];
+        ratings.push(rating);
+
+        const newAverageRating = Math.round((ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length) * 2) / 2;
+
+        updateQuery.$set = { ...updateFields, rating: newAverageRating, ratings };
+      } else {
+        updateQuery.$set = { ...updateFields };
+      }
+
+      // Remove undefined fields from update
+      if (updateQuery.$set) {
+        const setObject = updateQuery.$set as Record<string, unknown>;
+        Object.keys(setObject).forEach((key) => {
+          if (setObject[key] === undefined) {
+            delete setObject[key];
+          }
+        });
+      }
+
+      // Perform update
+      const updateResult = await db.collection("products").updateOne(
+        { _id: new ObjectId(_id) },
+        updateQuery
+      );
+
+      if (updateResult.modifiedCount === 0) {
+        return NextResponse.json({ success: false, message: "No changes were made" }, { status: 400 });
+      }
+
+      // Fetch and return the updated product
+      const updatedProduct = await db.collection("products").findOne({ _id: new ObjectId(_id) });
+
+      return NextResponse.json({ success: true, message: "Product updated successfully", product: updatedProduct });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      return NextResponse.json({ success: false, message: "Internal Server Error" }, { status: 500 });
+    }
+  }
+
+export async function getProductByID(id: string) {
   try {
-    // Authenticate user
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!id) {
+      return {
+        success: false,
+        message: "Missing product ID",
+        status: 400,
+      };
+    }
 
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
+    if (!ObjectId.isValid(id)) {
+      return {
+        success: false,
+        message: "Invalid product ID",
+        status: 400,
+      };
+    }
 
-    // Connect to MongoDB
     const client = await clientPromise;
     const db = client.db("dukandarshandar");
 
-    // Extract product details
-    const { _id, name, category, price, quantity, rating, image, updated_by } = await req.json();
+    const product = await db.collection("products").findOne({ _id: new ObjectId(id) });
 
-    if (!_id) {
-      return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
+    if (!product) {
+      return {
+        success: false,
+        message: "Product not found",
+        status: 404,
+      };
     }
 
-    // Update product in database
-    const updatedProduct = await db.collection("products").findOneAndUpdate(
-      { _id: new ObjectId(_id) },
-      {
-        $set: {
-          ...(name && { name }),
-          ...(category && { category }),
-          ...(price && { price }),
-          ...(quantity && { quantity }),
-          ...(rating !== undefined && { rating }),
-          ...(image && { image }),
-          updated_by,
-          updated_at: new Date(),
-        },
-      },
-      { returnDocument: "after" } // Return the updated document
-    );
-
-    if (!updatedProduct || !updatedProduct.value) {
-      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, message: "Product updated successfully", product: updatedProduct.value });
+    return {
+      success: true,
+      product,
+      status: 200,
+    };
   } catch (error) {
-    console.error("Error updating product:", error);
-    return NextResponse.json({ success: false, message: "Failed to update product" }, { status: 500 });
+    console.error("Error fetching product:", error);
+    return {
+      success: false,
+      message: "Failed to fetch product",
+      status: 500,
+    };
+  }
+}
+
+export async function fetchProducts() {
+  try {
+    const client = await clientPromise;
+    const db = client.db("dukandarshandar");
+
+    // Fetch all products from the "products" collection
+    const products = await db.collection("products").find({}).toArray();
+
+    return { success: true, products };
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return { success: false, message: "Failed to fetch products" };
   }
 }

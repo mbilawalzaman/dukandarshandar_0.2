@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { fetchProducts } from "@/controllers/productController";
 
+// GET request to fetch products
 export async function GET() {
-  try {
-    const client = await clientPromise;
-    const db = client.db("dukandarshandar");
+  const result = await fetchProducts();
 
-    const products = await db.collection("products").find({}).toArray();
+  if (!result.success) {
+    // If there was an error, return failure response
+    return NextResponse.json({ success: false, message: result.message }, { status: 500 });
+  }
 
-    return NextResponse.json({ success: true, products });
-  } 
-  catch (error) {
-    console.error("Product update error:", error); // ✅ Logs the error
-    return NextResponse.json({ success: false, message: "Failed to fetch products" }, { status: 500 });
-}
+  // Return the products if success
+  return NextResponse.json({ success: true, products: result.products });
 }

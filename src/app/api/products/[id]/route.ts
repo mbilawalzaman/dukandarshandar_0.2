@@ -1,46 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { getProductByID } from "@/controllers/productController"; // Adjust path accordingly
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> } 
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // ✅ Ensure `params` is awaited properly
     const { id } = await context.params;
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, message: "Missing product ID" },
-        { status: 400 }
-      );
-    }
+    // Call the controller function
+    const response = await getProductByID(id);
 
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid product ID" },
-        { status: 400 }
-      );
-    }
-
-    const client = await clientPromise;
-    const db = client.db("dukandarshandar");
-
-    const product = await db
-      .collection("products")
-      .findOne({ _id: new ObjectId(id) });
-
-    if (!product) {
-      return NextResponse.json(
-        { success: false, message: "Product not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ success: true, product });
+    // Return response based on the result from the controller
+    return NextResponse.json({ success: response.success, message: response.message, product: response.product || null }, { status: response.status });
   } catch (error) {
-    console.error("Error fetching product:", error);
+    console.error("Error in GET handler:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch product" },
       { status: 500 }

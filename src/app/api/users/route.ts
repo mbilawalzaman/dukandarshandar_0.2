@@ -1,38 +1,39 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
 import { verifyToken } from "@/lib/auth"; // Utility function to verify JWT
-import { getUserById } from "@/controllers/userController";
+import { createUser, getUsers, getUserById } from "@/controllers/userController"; // Import controller functions
 import { UserRole } from "@/models/User";
-import { hashPassword } from "@/lib/auth"; 
 
+// GET request to fetch users or a specific user by ID
 export async function GET(req: Request) {
   try {
+    // Extract token from the Authorization header
     const token = req.headers.get("authorization")?.split(" ")[1];
-
+    
     if (!token) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify the token (you could use a utility function for JWT verification)
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json({ success: false, error: "Invalid Token" }, { status: 403 });
     }
 
-    const client = await clientPromise;
-    const db = client.db("dukandarshandar");
-
+    // Extract query parameter from the URL
     const url = new URL(req.url);
     const userId = url.searchParams.get("id");
 
+    // If userId is provided, get the user by ID
     if (userId) {
       const user = await getUserById(userId);
       if (!user) {
         return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
       }
-      return NextResponse.json({ success: true, user }); // ✅ Wrap in NextResponse.json()
+      return NextResponse.json({ success: true, user });
     }
 
-    const users = await db.collection("users").find({}).toArray();
+    // If no userId, fetch all users
+    const users = await getUsers();
     return NextResponse.json({ success: true, users });
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -40,35 +41,33 @@ export async function GET(req: Request) {
   }
 }
 
+// POST request to create a new user
 export async function POST(req: Request) {
   try {
-    console.log("Incoming POST request...");
+    // Extract the request body data
     const { name, email, password, role } = await req.json();
-    console.log("Received data:", { name, email, role });
 
+    // Basic validation for required fields
     if (!name || !email || !password) {
-      console.error("Missing required fields");
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
+    // Assign a role if it's provided; otherwise, default to 'user'
     const assignedRole = Object.values(UserRole).includes(role) ? role : UserRole.USER;
-    console.log("Assigned role:", assignedRole);
 
-    const hashedPassword = await hashPassword(password);
-    console.log("Hashed password generated");
-
-    const client = await clientPromise;
-    const db = client.db("dukandarshandar");
-
-    const result = await db.collection("users").insertOne({
+    // Prepare the user object to be passed to the controller
+    const newUser = {
       name,
       email,
-      password: hashedPassword,
+      password,
       role: assignedRole,
-    });
+    };
 
-    console.log("User inserted:", result.insertedId);
-    return NextResponse.json({ success: true, userId: result.insertedId }, { status: 201 });
+    // Call the controller's createUser function to create the new user
+    const createdUser = await createUser(newUser);
+
+    // Return the response with the user ID of the created user
+    return NextResponse.json({ success: true, userId: createdUser._id }, { status: 201 });
   } catch (error) {
     console.error("Error creating user:", error);
     return NextResponse.json({ success: false, error: "Failed to create user" }, { status: 500 });

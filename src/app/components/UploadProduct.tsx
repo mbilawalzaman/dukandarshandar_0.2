@@ -169,7 +169,15 @@ const UploadProduct: React.FC<UploadProductProps> = ({ onProductUpload }) => {
                     />
                 </div>
 
-                {selectedImage && <Image src={selectedImage} alt="Preview" className="w-24 h-24 object-cover mt-2" />}
+                {selectedImage && (
+                    <Image
+                        src={selectedImage}
+                        alt="Preview"
+                        width={96}  // 24 * 4 (tailwind w-24)
+                        height={96} // 24 * 4 (tailwind h-24)
+                        className="w-24 h-24 object-cover mt-2"
+                    />
+                )}
 
                 <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
                     Upload Product

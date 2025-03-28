@@ -121,8 +121,10 @@ const ProductDetails = () => {
                 <Image
                     src={product.image}
                     alt={product.name}
+                    width={500} // Set a fixed width
+                    height={300} // Adjust height accordingly
                     style={{
-                        width: "100%",
+                        width: "100%", // Responsive styling
                         maxWidth: "500px",
                         height: "auto",
                         borderRadius: "12px",
